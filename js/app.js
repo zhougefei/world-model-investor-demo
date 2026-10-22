@@ -650,11 +650,6 @@
 
   function renderReadiness() {
     const ready = readiness();
-    $$("[data-ready]").forEach((dot) => {
-      const st = ready[dot.dataset.ready];
-      dot.className = `dot ${st.level}`;
-      dot.title = st.text;
-    });
     const tbody = $("#ready-table tbody");
     tbody.innerHTML = "";
     [["① 随机测试集", ready.blind], ["② 三维视频", ready.video],
