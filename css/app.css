@@ -362,6 +362,7 @@ kbd {
 .score-main .ours b { color: var(--model-ink); }
 .score-ref { padding-left: 28px; border-left: 1px solid var(--line); font-size: 13px; color: var(--muted); }
 .score-ref strong { color: var(--ink-2); font-weight: 600; }
+.score-big { font-size: 22px; font-weight: 800; line-height: 1.2; color: var(--ink); white-space: nowrap; cursor: help; }
 
 /* ---------- video tab ---------- */
 .video-panel { flex: 1 0 auto; width: 100%; max-width: 1840px; margin: 0 auto; padding: 16px 24px 12px; display: grid; grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr); gap: 16px; }

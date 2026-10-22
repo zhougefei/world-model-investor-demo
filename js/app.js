@@ -515,11 +515,14 @@
     ref.innerHTML = "";
     const strong = document.createElement("strong");
     strong.textContent = "整体准确率（屏幕上这两个模型，2D 验证集）";
-    // Headline = the search's validation set (metrics.json → toy_2d.*.validation), with its real size,
-    // class split and metric; the independent test-set result stays in the appendix.
-    ref.append(strong,
-      `：我们 ${pct1(v.dsl.validation.balanced_accuracy)} · 对照 ${pct1(v.baseline.validation.balanced_accuracy)}` +
-      `（搜索用的验证集 ${v.dsl.validation.n} 题，会撞 ${v.dsl.validation.positives} / 不会撞 ${v.dsl.validation.negatives}，平衡准确率）`);
+    // Headline = the search's validation set (metrics.json → toy_2d.*.validation). Its metric and
+    // sample sizes are on hover and in the appendix; the independent test-set result is in the appendix.
+    const big = document.createElement("span");
+    big.className = "score-big";
+    big.textContent = `我们 ${pct1(v.dsl.validation.balanced_accuracy)} ：对照 ${pct1(v.baseline.validation.balanced_accuracy)}`;
+    big.title = `平衡准确率 =（会撞样本判对的比例 + 不会撞样本判对的比例）÷ 2。` +
+      `搜索用的验证集 ${v.dsl.validation.n} 题：会撞 ${v.dsl.validation.positives}、不会撞 ${v.dsl.validation.negatives}`;
+    ref.append(strong, "：", big);
   }
 
   function renderStage() {
@@ -706,7 +709,7 @@
         `原始训练运行记录的同一份测试集结果。${rp.discrepancy_note}。${t.seeds}`,
         "metrics.json → toy_2d.champion.test / toy_2d.baseline.test"],
       [`2D 验证集 ${pct1(t.dsl.validation.balanced_accuracy)} / ${pct1(t.baseline.validation.balanced_accuracy)}`,
-        `平衡准确率。验证集 ${t.dsl.validation.n} 题（会撞 ${t.dsl.validation.positives} / 不会撞 ${t.dsl.validation.negatives}）。${t.selection_bias_note}。2026-09-23 周会汇报的 98.10% / 71.91% 就是这组`,
+        `平衡准确率 =（会撞样本判对的比例 + 不会撞样本判对的比例）÷ 2。验证集 ${t.dsl.validation.n} 题（会撞 ${t.dsl.validation.positives} / 不会撞 ${t.dsl.validation.negatives}）。${t.selection_bias_note}。2026-09-23 周会汇报的 98.10% / 71.91% 就是这组`,
         "metrics.json → toy_2d.*.validation"],
       ["2D 分类别（屏幕上的模型）",
         `会撞的题答对：我们 ${pct1(rp.dsl.collision_recall)} · 对照 ${pct1(rp.baseline.collision_recall)}；不会撞的题答对：我们 ${pct1(rp.dsl.no_collision_recall)} · 对照 ${pct1(rp.baseline.no_collision_recall)}`,
