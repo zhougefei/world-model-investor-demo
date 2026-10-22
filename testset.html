@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>测试集逐题明细</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='17' y='9' width='12' height='12' rx='2' fill='%23396fd3'/%3E%3Ccircle cx='9' cy='16' r='6' fill='%23db373f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/app.css">
+<style>
+  .page { flex: 1 0 auto; width: 100%; max-width: 1840px; margin: 0 auto; padding: 16px 24px 20px;
+          display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); gap: 14px; align-items: start; }
+  /* Left column = exactly one screen; the table takes whatever height the summary leaves. */
+  .left { display: flex; flex-direction: column; gap: 12px; min-width: 0; height: calc(100vh - 100px); min-height: 560px; }
+  .summary { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 0.8fr); gap: 12px; }
+  .sum-card { padding: 12px 14px; background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius); }
+  .sum-card.model { border-color: var(--model); }
+  .sum-card h2 { margin: 0; font-size: 15px; color: var(--model-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sum-card h2 small { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .sum-card .big { font-size: 26px; font-weight: 800; line-height: 1.25; margin: 2px 0 6px; white-space: nowrap; }
+  .sum-card .big small { font-size: 15px; font-weight: 600; color: var(--muted); }
+  .cm { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
+  .cm th, .cm td { border: 1px solid var(--line); padding: 3px 6px; }
+  .cm th { background: var(--engine-soft); color: var(--muted); font-weight: 600; }
+  .cm td.hit { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
+  .cm td.miss { background: var(--bad-soft); color: var(--bad); font-weight: 700; }
+  .vs-list { margin: 6px 0 0; padding: 0; list-style: none; font-size: 14px; }
+  .vs-list li { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .vs-list b { font-size: 16px; }
+  .provenance { font-size: 12.5px; color: var(--muted); }
+  .provenance code { font-size: 12px; }
+  .check-ok { color: var(--ok); font-weight: 600; }
+  .check-bad { color: var(--bad); font-weight: 600; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 14px; background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius); }
+  .filters .chip[aria-pressed="true"] { border-color: var(--model); background: var(--model-soft); color: var(--model-ink); font-weight: 600; }
+  .filters select, .filters input { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
+  .filters input { width: 150px; }
+  .filters .count { margin-left: auto; font-size: 13px; color: var(--muted); }
+  .sep { width: 1px; height: 22px; background: var(--line); }
+
+  .table-wrap { background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius); overflow: auto; flex: 1 1 auto; min-height: 240px; }
+  table.rows { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .rows th { position: sticky; top: 0; z-index: 1; background: var(--engine-soft); color: var(--muted); font-weight: 600; font-size: 12.5px; text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  .rows td { padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .rows tbody tr { cursor: pointer; }
+  .rows tbody tr:hover { background: #fafaf8; }
+  .rows tbody tr.sel { background: var(--model-soft); box-shadow: inset 3px 0 0 var(--model); }
+  .rows td.num { color: var(--faint); }
+  .rows td.ans.ok { color: var(--ok); }
+  .rows td.ans.bad { color: var(--bad); background: var(--bad-soft); font-weight: 600; }
+  .rows td.truth-cell { font-weight: 600; }
+  .rows td.detail { color: var(--muted); }
+
+  .preview { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius); }
+  .preview h2 { margin: 0; font-size: 16px; }
+  .preview .canvas-wrap { width: min(100%, 400px, calc(100vh - 330px)); min-width: 0; }
+  .pv-frame { font-size: 13px; color: var(--ink-2); }
+  .pv-answers { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .pv-answers div { padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--line); font-size: 12.5px; color: var(--muted); }
+  .pv-answers b { display: block; font-size: 19px; color: var(--ink); }
+  .pv-answers .truthbox { border-color: var(--engine); background: var(--engine-soft); }
+  .pv-answers .ok { border-color: var(--ok); background: var(--ok-soft); }
+  .pv-answers .bad { border-color: var(--bad); background: var(--bad-soft); }
+  .pv-empty { color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 1100px) {
+    .page { grid-template-columns: 1fr; }
+    .left { height: auto; min-height: 0; }
+    .summary { grid-template-columns: 1fr 1fr; }
+    .preview { position: static; order: -1; }
+    .table-wrap { max-height: 70vh; }
+  }
+  @media (max-width: 760px) {
+    .page { padding: 12px 16px; }
+    .summary { grid-template-columns: 1fr; }
+    .filters .count { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="#fff" stroke="#d6d8db"/>
+      <rect x="17" y="10" width="9" height="9" rx="1.5" fill="#396fd3"/>
+      <circle cx="10" cy="17" r="4.5" fill="#db373f"/>
+    </svg>
+    <div>
+      <div class="brand-name">测试集逐题明细</div>
+      <div class="brand-sub">2D 独立测试集 1000 题 · 真实结果与两个模型的判断</div>
+    </div>
+  </div>
+  <div class="top-actions" style="margin-left:auto">
+    <a class="ghost-btn" href="index.html">← 返回演示</a>
+  </div>
+</header>
+
+<main class="page">
+ <div class="left">
+  <section class="summary" id="summary"></section>
+  <p class="provenance" id="provenance"></p>
+
+  <section class="filters" aria-label="筛选">
+    <span class="tag">结果</span>
+    <div id="outcome-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    <span class="sep"></span>
+    <label>真实结果
+      <select id="truth-filter">
+        <option value="all">全部</option>
+        <option value="1">会撞</option>
+        <option value="0">不会撞</option>
+        <option value="graze">擦肩而过（间隙 &lt; 2 像素）</option>
+      </select>
+    </label>
+    <input id="search" type="search" placeholder="搜题号，如 000123" aria-label="搜题号">
+    <span class="count" id="count"></span>
+  </section>
+
+  <div class="table-wrap">
+    <table class="rows">
+      <thead><tr><th>#</th><th>题号</th><th>真实结果</th><th>首次接触 / 最近间隙</th><th>我们搜出来的结构</th><th>对照组结构</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+ </div>
+    <aside class="preview" aria-live="polite">
+      <h2 id="pv-title">点任意一题回放</h2>
+      <div class="canvas-wrap"><canvas id="pv-canvas" aria-label="回放"></canvas><span class="badge badge-engine">物理引擎回放</span></div>
+      <div class="pv-frame" id="pv-frame">用 ↑ ↓ 键逐题切换。虚线 = 前 32 帧（模型看到的），实线 = 后 16 帧。</div>
+      <div class="pv-answers" id="pv-answers"></div>
+      <button class="btn btn-quiet" type="button" id="pv-replay" disabled>重播</button>
+    </aside>
+</main>
+
+<script src="data/testset.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/render.js"></script>
+<script>
+(function () {
+  "use strict";
+  const P = window.WM.physics, R = window.WM.render;
+  const data = (window.DEMO_DATA || {}).testset;
+  const $ = (s) => document.querySelector(s);
+  if (!data) {
+    $("#summary").innerHTML = '<div class="sum-card">缺少 data/testset.js：运行 python tools/build_testset.py</div>';
+    return;
+  }
+  const answer = (v) => (v === 1 ? "会撞" : "不会撞");
+
+  // Replay every scene with the page's physics: labels and contact frames must match the manifest.
+  let mismatches = 0;
+  const rows = data.rows.map((r, i) => {
+    const sc = P.classify(r.ball, r.obstacle, r.velocity);
+    if (sc.status !== P.STATUS.OK || sc.label !== r.label || sc.firstCollision !== r.first) mismatches += 1;
+    const gap = r.label === 0 && sc.sim && sc.sim.states.length ? P.minGap(sc.sim.states, r.obstacle, 0, P.TOTAL_FRAMES) : null;
+    return { ...r, index: i, states: sc.sim ? sc.sim.states : [], gap, dslOk: r.dsl === r.label, baseOk: r.baseline === r.label };
+  });
+
+  /* ---- summary ---- */
+  function cm(key) {
+    const c = { tp: 0, fn: 0, fp: 0, tn: 0 };
+    rows.forEach((r) => {
+      if (r.label === 1) c[r[key] === 1 ? "tp" : "fn"] += 1;
+      else c[r[key] === 1 ? "fp" : "tn"] += 1;
+    });
+    return c;
+  }
+  function modelCard(title, key) {
+    const c = cm(key);
+    const ok = c.tp + c.tn;
+    return `<div class="sum-card model"><h2>${title}</h2>
+      <div class="big">${ok} / ${rows.length} <small>答对（${(ok / rows.length * 100).toFixed(1)}%）</small></div>
+      <table class="cm"><tr><th></th><th>判断：会撞</th><th>判断：不会撞</th></tr>
+      <tr><th>真实：会撞</th><td class="hit">${c.tp}</td><td class="miss">${c.fn}</td></tr>
+      <tr><th>真实：不会撞</th><td class="miss">${c.fp}</td><td class="hit">${c.tn}</td></tr></table></div>`;
+  }
+  const both = rows.filter((r) => r.dslOk && r.baseOk).length;
+  const onlyDsl = rows.filter((r) => r.dslOk && !r.baseOk).length;
+  const onlyBase = rows.filter((r) => !r.dslOk && r.baseOk).length;
+  const none = rows.filter((r) => !r.dslOk && !r.baseOk).length;
+  $("#summary").innerHTML = modelCard("我们搜出来的结构", "dsl") + modelCard("对照组结构 <small>按同规模复现的 V-JEPA 式</small>", "baseline") +
+    `<div class="sum-card"><h2 style="color:var(--ink)">逐题对比</h2><ul class="vs-list">
+      <li><span>两边都对</span><b>${both}</b></li><li><span>只有我们对</span><b>${onlyDsl}</b></li>
+      <li><span>只有对照对</span><b>${onlyBase}</b></li><li><span>两边都错</span><b>${none}</b></li></ul></div>`;
+  const s = data.source;
+  $("#provenance").innerHTML =
+    `真实结果：<code>${s.manifest}</code>（sha256 ${s.manifest_sha256.slice(0, 12)}…）· 两个模型的判断：<code>${s.predictions}</code>（sha256 ${s.predictions_sha256.slice(0, 12)}…；${s.generated_with}；${s.decision_rule}）。` +
+    (mismatches
+      ? ` <span class="check-bad">物理重放核对：${mismatches} 题与 manifest 不一致</span>`
+      : ` <span class="check-ok">物理重放核对：${rows.length} / ${rows.length} 题的真实结果与网页物理引擎一致</span>`);
+
+  /* ---- filters ---- */
+  const OUTCOMES = [
+    ["all", "全部", () => true],
+    ["dslWrong", "我们答错", (r) => !r.dslOk],
+    ["baseWrong", "对照答错", (r) => !r.baseOk],
+    ["onlyDsl", "只有我们对", (r) => r.dslOk && !r.baseOk],
+    ["onlyBase", "只有对照对", (r) => !r.dslOk && r.baseOk],
+    ["none", "两边都错", (r) => !r.dslOk && !r.baseOk],
+  ];
+  const state = { outcome: "all", truth: "all", q: "", selected: null };
+  const chips = $("#outcome-chips");
+  OUTCOMES.forEach(([id, label, fn]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.dataset.id = id;
+    b.textContent = `${label} ${rows.filter(fn).length}`;
+    b.addEventListener("click", () => { state.outcome = id; render(); });
+    chips.appendChild(b);
+  });
+  $("#truth-filter").addEventListener("change", (e) => { state.truth = e.target.value; render(); });
+  $("#search").addEventListener("input", (e) => { state.q = e.target.value.trim(); render(); });
+
+  function visible() {
+    const outcome = OUTCOMES.find((o) => o[0] === state.outcome)[2];
+    return rows.filter((r) => outcome(r) &&
+      (state.truth === "all" || (state.truth === "graze" ? r.gap !== null && r.gap < 2 : r.label === Number(state.truth))) &&
+      (!state.q || r.id.includes(state.q)));
+  }
+
+  function cell(value, ok) {
+    return `<td class="ans ${ok ? "ok" : "bad"}">${answer(value)} ${ok ? "✓" : "✗"}</td>`;
+  }
+
+  let shown = [];
+  function render() {
+    [...chips.children].forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.id === state.outcome)));
+    shown = visible();
+    $("#count").textContent = `显示 ${shown.length} / ${rows.length} 题`;
+    $("#rows").innerHTML = shown.map((r) => {
+      const detail = r.label === 1 ? `第 ${r.first + 1} 帧（后 16 帧第 ${r.first - 31} 帧）` : `最近 ${r.gap.toFixed(1)} 像素`;
+      return `<tr data-i="${r.index}" class="${state.selected === r.index ? "sel" : ""}"><td class="num">${r.index + 1}</td><td>${r.id}</td>` +
+        `<td class="truth-cell">${answer(r.label)}</td><td class="detail">${detail}</td>${cell(r.dsl, r.dslOk)}${cell(r.baseline, r.baseOk)}</tr>`;
+    }).join("");
+  }
+
+  $("#rows").addEventListener("click", (e) => {
+    const tr = e.target.closest("tr");
+    if (tr) select(Number(tr.dataset.i));
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("input, select") || !shown.length) return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const pos = shown.findIndex((r) => r.index === state.selected);
+    const next = e.key === "ArrowDown" ? Math.min(shown.length - 1, pos + 1) : Math.max(0, pos - 1);
+    select(shown[next < 0 ? 0 : next].index);
+  });
+
+  /* ---- preview ---- */
+  let raf = 0, timer = 0;
+  function select(i) {
+    state.selected = i;
+    document.querySelectorAll("#rows tr.sel").forEach((tr) => tr.classList.remove("sel"));
+    const tr = document.querySelector(`#rows tr[data-i="${i}"]`);
+    if (tr) { tr.classList.add("sel"); tr.scrollIntoView({ block: "nearest" }); }
+    const r = rows[i];
+    $("#pv-title").textContent = `第 ${i + 1} 题 · ${r.id}`;
+    const box = (label, v, ok) => `<div class="${ok === undefined ? "truthbox" : ok ? "ok" : "bad"}">${label}<b>${answer(v)}${ok === undefined ? "" : ok ? " ✓" : " ✗"}</b></div>`;
+    $("#pv-answers").innerHTML = box("真实结果", r.label) + box("我们", r.dsl, r.dslOk) + box("对照", r.baseline, r.baseOk);
+    $("#pv-replay").disabled = false;
+    play();
+  }
+
+  function drawAt(r, t) {
+    const { ctx, s } = R.setupCanvas($("#pv-canvas"));
+    R.drawWorld(ctx, s, null, r.obstacle);
+    R.drawPath(ctx, s, r.states, 0, Math.min(t, 31), { color: "rgba(27,29,32,0.45)", dash: [0.8, 1.2], width: 0.5 });
+    if (t > 31) R.drawPath(ctx, s, r.states, 31, t, { color: "rgba(219,55,63,0.9)", width: 0.7 });
+    if (r.first !== null && t >= r.first) R.drawContactMark(ctx, s, r.states[r.first]);
+    R.drawBall(ctx, s, r.states[t]);
+    $("#pv-frame").textContent = `第 ${t + 1} / 48 帧 · ${t < 32 ? "前 32 帧（模型看到的）" : "后 16 帧（模型要判断的，物理引擎生成）"}` +
+      (r.label === 1 ? ` · 第 ${r.first + 1} 帧首次接触` : ` · 不会撞，最近 ${r.gap.toFixed(1)} 像素`);
+  }
+
+  function play() {
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    const r = rows[state.selected];
+    if (!r || r.states.length < P.TOTAL_FRAMES) return;
+    const t0 = performance.now();
+    const fps = 16;
+    const step = () => {
+      const t = Math.min(P.TOTAL_FRAMES - 1, Math.floor(((performance.now() - t0) / 1000) * fps));
+      drawAt(r, t);
+      if (t < P.TOTAL_FRAMES - 1) raf = requestAnimationFrame(step);
+    };
+    step();
+    // Background tabs throttle rAF; always land on the final frame.
+    timer = setTimeout(() => { cancelAnimationFrame(raf); drawAt(r, P.TOTAL_FRAMES - 1); }, (P.TOTAL_FRAMES / fps) * 1000 + 200);
+  }
+  $("#pv-replay").addEventListener("click", play);
+  window.addEventListener("resize", () => { if (state.selected !== null) drawAt(rows[state.selected], P.TOTAL_FRAMES - 1); });
+
+  render();
+  const { ctx, s: scale } = R.setupCanvas($("#pv-canvas"));
+  R.drawWorld(ctx, scale, null, null);
+  window.TESTSET_CHECK = { rows: rows.length, mismatches, both, onlyDsl, onlyBase, none };
+})();
+</script>
+</body>
+</html>

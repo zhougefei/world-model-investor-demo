@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>物理一致性自检</title>
+<style>
+  :root { --ink:#1b1d20; --muted:#6b7076; --line:#e3e3df; --ok:#15803d; --bad:#b42318; }
+  body { margin:0; padding:24px 16px; font:15px/1.6 "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif; color:var(--ink); background:#f6f6f4; }
+  main { max-width:960px; margin:0 auto; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p { color:var(--muted); margin:0 0 16px; }
+  .verdict { padding:14px 16px; border-radius:10px; background:#fff; border:1px solid var(--line); font-weight:600; margin-bottom:16px; }
+  .verdict.pass { border-color:var(--ok); color:var(--ok); }
+  .verdict.fail { border-color:var(--bad); color:var(--bad); }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  th, td { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); font-size:13px; }
+  th { color:var(--muted); font-weight:500; }
+  .bad { color:var(--bad); font-weight:600; }
+  .wrap { overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>物理一致性自检</h1>
+  <p>用原版生成器（vendor/generate_2d_collision_dataset.py）跑出的参考轨迹和画面，逐帧检查网页里的物理引擎（js/physics.js）和模型输入画面（js/render.js）。每次彩排前打开一次，必须全部通过。</p>
+  <div id="verdict" class="verdict">运行中…</div>
+  <div class="wrap"><table id="table"><thead><tr><th>#</th><th>来源</th><th>状态（生成器 / 网页）</th><th>首次接触帧</th><th>接触次数</th><th>最大状态误差</th></tr></thead><tbody></tbody></table></div>
+</main>
+<script src="data/physics_fixtures.js"></script>
+<script src="data/presets.js"></script>
+<script src="data/blind_test.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/render.js"></script>
+<script>
+(function () {
+  const P = window.WM.physics;
+  const data = window.DEMO_DATA || {};
+  const rows = [];
+  let failures = 0;
+  const TOL = 1e-4; // fixture states are float32 copies of float64 values
+
+  function check(origin, ball, obstacle, velocity, exp) {
+    const got = P.classify(ball, obstacle, velocity);
+    let maxErr = 0;
+    if (exp.states && got.sim && got.sim.states) {
+      exp.states.forEach((row, t) => row.forEach((v, k) => {
+        const g = got.sim.states[t] ? got.sim.states[t][k] : NaN;
+        maxErr = Math.max(maxErr, Math.abs(g - v));
+      }));
+      if (got.sim.states.length !== exp.states.length) maxErr = Infinity;
+    }
+    const statusOk = got.status === exp.status;
+    const frameOk = exp.first_collision_frame === undefined || got.firstCollision === exp.first_collision_frame;
+    const countOk = exp.collision_count === undefined || (got.sim && got.sim.collisionCount === exp.collision_count);
+    const labelOk = exp.label === undefined || exp.label === null || got.label === exp.label;
+    const errOk = !(maxErr > TOL);
+    const pass = statusOk && frameOk && countOk && labelOk && errOk;
+    if (!pass) failures += 1;
+    rows.push({ origin, pass, exp, got, maxErr, statusOk, frameOk, countOk, errOk });
+  }
+
+  (data.physicsFixtures?.fixtures || []).forEach((f) => check(f.origin, f.ball, f.obstacle, f.velocity, f));
+  (data.presets?.presets || []).forEach((p) =>
+    check("preset/" + p.id, p.ball, p.obstacle, P.velocityFromAngle(p.angle_deg), { status: "ok", label: p.label, first_collision_frame: p.first_collision_frame }));
+  (data.blindTest?.items || []).forEach((it) =>
+    check("blind/" + it.sample_id, it.ball, it.obstacle, it.velocity, { status: "ok", label: it.label, first_collision_frame: it.first_collision_frame }));
+
+  // Model-input frames: js/render.js must reproduce the generator's pixels exactly.
+  (data.physicsFixtures?.frames || []).forEach((f, k) => {
+    const ref = Uint8Array.from(atob(f.rgb_base64), (c) => c.charCodeAt(0));
+    const got = window.WM.render.modelFrame(f.ball, f.obstacle).data;
+    let bad = 0;
+    for (let p = 0; p < ref.length / 3; p++) {
+      if (got[p * 4] !== ref[p * 3] || got[p * 4 + 1] !== ref[p * 3 + 1] || got[p * 4 + 2] !== ref[p * 3 + 2]) bad += 1;
+    }
+    if (bad) failures += 1;
+    rows.push({ origin: `frame/${k}`, pass: !bad, pixelFrame: true, bad, exp: {}, got: {} });
+  });
+
+  const tbody = document.querySelector("#table tbody");
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    const cell = (text, ok) => `<td class="${ok === false ? "bad" : ""}">${text}</td>`;
+    if (r.pixelFrame) {
+      tr.innerHTML = cell(i + 1) + cell(r.origin) + `<td colspan="4" class="${r.pass ? "" : "bad"}">模型输入画面：${r.bad} / 4096 个像素与生成器不同</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+    tr.innerHTML = cell(i + 1) + cell(r.origin) +
+      cell(`${r.exp.status} / ${r.got.status}`, r.statusOk) +
+      cell(`${r.exp.first_collision_frame ?? "—"} / ${r.got.firstCollision ?? "—"}`, r.frameOk) +
+      cell(`${r.exp.collision_count ?? "—"} / ${r.got.sim?.collisionCount ?? "—"}`, r.countOk) +
+      cell(r.exp.states ? r.maxErr.toExponential(1) : "—", r.errOk);
+    tbody.appendChild(tr);
+  });
+  const total = rows.length;
+  const verdict = document.getElementById("verdict");
+  if (!total) {
+    verdict.textContent = "没有找到参考数据：先运行 tools/make_physics_fixtures.py";
+    verdict.className = "verdict fail";
+  } else if (failures) {
+    verdict.textContent = `未通过：${failures} / ${total} 条与生成器不一致。不要上台，先修 js/physics.js。`;
+    verdict.className = "verdict fail";
+  } else {
+    verdict.textContent = `全部通过：${total} 条与生成器逐帧一致（状态误差容限 ${TOL}）。`;
+    verdict.className = "verdict pass";
+  }
+  window.SELFCHECK_RESULT = { total, failures };
+})();
+</script>
+</body>
+</html>

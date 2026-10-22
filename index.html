@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>猜碰撞 · 世界模型演示</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='17' y='9' width='12' height='12' rx='2' fill='%23396fd3'/%3E%3Ccircle cx='9' cy='16' r='6' fill='%23db373f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="ribbon" id="ribbon" hidden>
+  <strong>彩排模式</strong><span id="ribbon-text"></span>
+  <button class="link" type="button" data-open="appendix">查看就绪状态</button>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="1" y="1" width="30" height="30" rx="8" fill="#fff" stroke="#d6d8db"/>
+      <rect x="17" y="10" width="9" height="9" rx="1.5" fill="#396fd3"/>
+      <circle cx="10" cy="17" r="4.5" fill="#db373f"/>
+      <path d="M13.5 15.2 L16 14" stroke="#1b1d20" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="brand-name">猜碰撞</div>
+      <div class="brand-sub">世界模型的一个子问题 · 判断题，不是作文题</div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="演示环节">
+    <button class="tab" role="tab" type="button" id="tab-blind" data-tab="blind" aria-selected="true"><kbd>1</kbd>随机测试集</button>
+    <button class="tab" role="tab" type="button" id="tab-video" data-tab="video" aria-selected="false"><kbd>2</kbd>三维视频</button>
+  </nav>
+  <div class="top-actions">
+    <button class="readiness" type="button" id="readiness" data-open="appendix" title="就绪状态：随机测试集 · 三维视频">
+      <span class="dot" data-ready="blind"></span><span class="dot" data-ready="video"></span>就绪
+    </button>
+    <button class="ghost-btn" type="button" data-open="appendix">附录 <kbd>A</kbd></button>
+  </div>
+</header>
+
+<!-- Tab 1: questions drawn at random from the test set, any of which can be picked. -->
+<main class="stage" id="stage">
+  <section class="col col-input" aria-labelledby="h-input">
+    <div class="col-head">
+      <h2 id="h-input"><span class="step">①</span>出题区</h2>
+      <div class="col-tools" id="input-tools"></div>
+    </div>
+    <div class="q-picker" id="q-picker" role="group" aria-label="选择题目"></div>
+    <div class="canvas-wrap">
+      <canvas id="arena" aria-label="题目：小球、方块和小球的运动方向"></canvas>
+      <span class="badge badge-engine">物理引擎</span>
+      <span class="overlay-note" id="arena-note" hidden></span>
+    </div>
+    <div class="input-foot">
+      <div class="scene-status" id="scene-status" role="status"></div>
+      <p class="hint" id="input-hint"></p>
+    </div>
+  </section>
+
+  <section class="col col-model" aria-labelledby="h-model">
+    <div class="col-head"><h2 id="h-model"><span class="step">②</span>模型判断</h2><span class="tag" id="model-tag"></span></div>
+    <button class="btn btn-model" type="button" id="btn-guess"><span>让模型猜</span><kbd>空格</kbd></button>
+    <article class="model-card" data-model="dsl">
+      <span class="badge badge-model">模型输出</span>
+      <header class="card-head">
+        <h3>我们搜出来的结构</h3>
+        <p class="card-sub" data-fact-text="dslSub"></p>
+      </header>
+      <div class="card-body">
+        <div class="verdict-row"><span class="verdict" data-role="verdict"></span><span class="mark" data-role="mark" hidden></span></div>
+        <div class="progress" data-role="progress" hidden><i></i></div>
+      </div>
+      <p class="card-note" data-role="note"></p>
+    </article>
+    <article class="model-card" data-model="baseline">
+      <span class="badge badge-model">模型输出</span>
+      <header class="card-head">
+        <h3>对照组结构</h3>
+        <p class="card-sub" data-fact-text="baselineSub"></p>
+      </header>
+      <div class="card-body">
+        <div class="verdict-row"><span class="verdict" data-role="verdict"></span><span class="mark" data-role="mark" hidden></span></div>
+        <div class="progress" data-role="progress" hidden><i></i></div>
+      </div>
+      <p class="card-note" data-role="note"></p>
+    </article>
+  </section>
+
+  <section class="col col-reveal" aria-labelledby="h-reveal">
+    <div class="col-head"><h2 id="h-reveal"><span class="step">③</span>揭晓</h2></div>
+    <button class="btn btn-engine" type="button" id="btn-reveal" disabled><span>播放后 16 帧</span><kbd>空格</kbd></button>
+    <div class="canvas-wrap reveal">
+      <canvas id="reveal" aria-label="揭晓：后 16 帧"></canvas>
+      <span class="badge badge-engine">物理引擎生成，不是模型画的</span>
+      <div class="cover" id="reveal-cover"><span class="q">?</span><span id="reveal-cover-text"></span></div>
+    </div>
+    <div class="truth waiting" id="truth" aria-live="polite">
+      <div class="truth-label">真实结果</div>
+      <div class="truth-value" id="truth-value">揭晓后显示</div>
+      <div class="truth-detail" id="truth-detail"></div>
+    </div>
+    <button class="btn btn-quiet" type="button" id="btn-next"></button>
+  </section>
+</main>
+
+<section class="video-panel" id="video-panel" hidden aria-label="三维视频">
+  <div class="col">
+    <div class="col-head"><h2>三维渲染场景：CLEVRER</h2><div class="col-tools" id="clip-tabs"></div></div>
+    <div class="video-wrap" id="clip-media-wrap"><span class="badge badge-engine" id="clip-badge">数据集原始画面，不是模型生成</span></div>
+    <p class="caption" id="clip-caption"></p>
+    <div id="clip-scored" hidden>
+      <div class="clip-cards" id="clip-cards"></div>
+      <div class="clip-reveal">
+        <button class="btn btn-engine" type="button" id="btn-clip-reveal">揭晓真实结果</button>
+        <div class="truth waiting" id="clip-truth"><div class="truth-label">真实结果（数据集标注）</div><div class="truth-value">揭晓后显示</div></div>
+      </div>
+    </div>
+  </div>
+  <aside class="col side">
+    <h3>同一种结构，换到三维场景</h3>
+    <p>在 2D 玩具任务上搜到的结构，搬到 CLEVRER 三维渲染视频上、<strong>权重重新训练</strong>后，同样是“看前 32 帧，判断后 16 帧会不会撞”：</p>
+    <div class="result-bars" id="clevrer-bars"></div>
+    <ul class="facts-list" id="clevrer-facts"></ul>
+    <p class="callout" id="clevrer-callout"></p>
+    <p class="source" id="clevrer-source"></p>
+  </aside>
+</section>
+
+<footer class="scorebar" id="scorebar">
+  <div class="scorebar-inner">
+    <div class="score-main">本场计分
+      <span class="ours">我们 <b id="score-dsl">0/0</b></span>
+      <span>对照 <b id="score-baseline">0/0</b></span>
+      <button class="link" type="button" id="btn-score-reset">清零</button>
+    </div>
+    <div class="score-ref" id="score-ref"></div>
+  </div>
+</footer>
+
+<!-- Appendix: readiness + provenance of every number. -->
+<dialog id="appendix" aria-labelledby="appendix-title">
+  <div class="dlg-head"><h2 id="appendix-title">附录：就绪状态与数字来源</h2><button class="ghost-btn" type="button" data-close>关闭 <kbd>Esc</kbd></button></div>
+  <div class="dlg-body">
+    <h3>就绪状态</h3>
+    <div class="tbl-wrap"><table class="tbl" id="ready-table"><thead><tr><th>环节</th><th>状态</th><th>说明</th></tr></thead><tbody></tbody></table></div>
+    <p class="muted">每次彩排前打开 <a href="selfcheck.html" target="_blank" rel="noopener">物理一致性自检</a>，确认网页物理引擎与训练数据生成器逐帧一致。</p>
+
+    <h3>屏幕上的数字从哪来</h3>
+    <p class="muted"><a href="testset.html" target="_blank" rel="noopener">查看测试集 1000 题逐题明细</a>：每题的真实结果、两个模型的判断，可按对错筛选、逐题回放。</p>
+    <div class="tbl-wrap"><table class="tbl" id="facts-table"><thead><tr><th>数字</th><th>含义与样本量</th><th>来源</th></tr></thead><tbody></tbody></table></div>
+    <p class="muted" id="facts-foot"></p>
+
+    <h3>屏幕上每一块的来源</h3>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>画面元素</th><th>来源</th><th>屏幕上怎么标</th></tr></thead>
+      <tbody>
+        <tr><td>两张卡片的判断（会撞 / 不会撞，不显示置信度）</td><td>真实推理：读两个模型在测试集上的离线跑批导出文件（tools/build_blind_test.py）</td><td>蓝框 +「模型输出」角标</td></tr>
+        <tr><td>前 32 帧动画</td><td>物理引擎按初始条件确定性模拟（与训练数据生成器逐帧一致）</td><td>灰框 +「物理引擎」角标</td></tr>
+        <tr><td>后 16 帧揭晓动画</td><td>同上</td><td>灰框 +「物理引擎生成，不是模型画的」</td></tr>
+        <tr><td>本场计分</td><td>现场真实累计，只统计有真实模型输出的题</td><td>无需标注</td></tr>
+        <tr><td>整体准确率</td><td>2026-09-18 证据包 metrics.json</td><td>带日期、样本量与来源</td></tr>
+        <tr><td>结构示意图</td><td>按 champion.json 与 2026-09-23 周会接线图重画</td><td>标「示意图」</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>结构示意（示意图，重画自 2026-09-23 内部汇报与 champion.json）</h3>
+    <div id="diagram-slot"></div>
+    <p class="muted" id="diagram-note"></p>
+  </div>
+</dialog>
+
+<script src="data/facts.js"></script>
+<script src="data/blind_test.js"></script>
+<script src="data/clevrer_clips.js"></script>
+<script src="data/model_check.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
