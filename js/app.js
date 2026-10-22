@@ -162,7 +162,7 @@
     MODELS.forEach((key) => {
       const m = item.models && item.models[key];
       if (m && (m.label === 0 || m.label === 1)) {
-        out[key] = { kind: "real", label: m.label, note: "离线跑批结果", runId: m.run_id };
+        out[key] = { kind: "real", label: m.label, note: "", runId: m.run_id };
       } else {
         out[key] = { kind: "none", note: BLIND && BLIND.status === "practice" ? "练习卷没有模型判断" : "该题缺少离线结果" };
       }
@@ -421,7 +421,8 @@
     });
     const tag = $("#model-tag");
     if (UITEST) tag.textContent = "UI 测试";
-    else tag.textContent = BLIND && BLIND.status === "official" ? "离线跑批结果" : "练习卷 · 无模型结果";
+    else tag.textContent = BLIND && BLIND.status === "official" ? "" : "练习卷 · 无模型结果";
+    tag.hidden = !tag.textContent;
   }
 
   // Shared by stage cards and CLEVRER clip cards.
@@ -578,7 +579,7 @@
       MODELS.forEach((key) => {
         const card = cardTemplate(key);
         const m = clip.models[key];
-        const pred = m ? { kind: "real", label: m.label, note: "离线跑批结果" } : { kind: "none", note: "该片段缺少模型判断" };
+        const pred = m ? { kind: "real", label: m.label, note: "" } : { kind: "none", note: "该片段缺少模型判断" };
         fillCard(card, "guessed", 0, pred, app.clipRevealed ? clip.label : null);
         cards.appendChild(card);
       });
