@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>猜碰撞 · 世界模型演示</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='17' y='9' width='12' height='12' rx='2' fill='%23396fd3'/%3E%3Ccircle cx='9' cy='16' r='6' fill='%23db373f'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=4cd688f5b4">
+<link rel="stylesheet" href="css/app.css?v=22fca046fb">
 </head>
 <body>
 
@@ -102,10 +102,12 @@
 </main>
 
 <section class="video-panel" id="video-panel" hidden aria-label="三维视频">
-  <div class="col">
+  <div class="col clip-col">
     <div class="col-head"><h2>三维渲染场景：CLEVRER</h2><div class="col-tools" id="clip-tabs"></div></div>
-    <div class="video-wrap" id="clip-media-wrap"><span class="badge badge-engine" id="clip-badge">数据集原始画面，不是模型生成</span></div>
-    <p class="caption" id="clip-caption"></p>
+    <figure class="clip-figure" id="clip-figure">
+      <div class="video-wrap" id="clip-media-wrap"><span class="badge badge-engine" id="clip-badge">数据集原始画面，不是模型生成</span></div>
+      <figcaption class="caption" id="clip-caption"></figcaption>
+    </figure>
     <div id="clip-scored" hidden>
       <div class="clip-cards" id="clip-cards"></div>
       <div class="clip-reveal">
@@ -115,12 +117,18 @@
     </div>
   </div>
   <aside class="col side">
-    <h3>同一种结构，换到三维场景</h3>
-    <p>在 2D 玩具任务上搜到的结构，搬到 CLEVRER 三维渲染视频上、<strong>权重重新训练</strong>后，同样是“看前 32 帧，判断后 16 帧会不会撞”：</p>
-    <div class="result-bars" id="clevrer-bars"></div>
-    <ul class="facts-list" id="clevrer-facts"></ul>
-    <p class="callout" id="clevrer-callout"></p>
-    <p class="source" id="clevrer-source"></p>
+    <div class="side-body">
+      <h3>同一种结构，换到三维场景</h3>
+      <p class="lead">在 2D 玩具任务上搜到的结构，搬到 CLEVRER 三维渲染视频上、<strong>权重重新训练</strong>后，同样是“看前 32 帧，判断后 16 帧会不会撞”：</p>
+      <div class="result-box">
+        <div class="result-title">验证集准确率</div>
+        <div class="result-bars" id="clevrer-bars"></div>
+        <div class="bar-legend"><span>瞎猜 50%</span></div>
+      </div>
+      <ul class="facts-list" id="clevrer-facts"></ul>
+      <p class="callout" id="clevrer-callout"></p>
+      <p class="source" id="clevrer-source"></p>
+    </div>
   </aside>
 </section>
 
@@ -173,6 +181,6 @@
 <script src="data/model_check.js?v=4dc6a02c0e"></script>
 <script src="js/physics.js?v=35a4aa4e66"></script>
 <script src="js/render.js?v=f85ee5d33d"></script>
-<script src="js/app.js?v=353d04e6b7"></script>
+<script src="js/app.js?v=06f8474710"></script>
 </body>
 </html>

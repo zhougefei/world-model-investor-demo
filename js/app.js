@@ -546,22 +546,35 @@
   function renderVideo() {
     const tabs = $("#clip-tabs");
     tabs.innerHTML = "";
-    CLIPS.forEach((clip, i) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "chip";
-      b.textContent = clip.role === "scored" ? `片段 ${i}` : "示例画面";
-      b.setAttribute("aria-pressed", String(i === app.clipIndex));
-      if (i === app.clipIndex) b.style.borderColor = "var(--model)";
-      b.addEventListener("click", () => { app.clipIndex = i; app.clipRevealed = false; renderVideo(); });
-      tabs.appendChild(b);
-    });
+    const clipName = (clip, i) => (clip.role === "scored" ? `片段 ${i}` : `示例画面${clip.split === "train" ? " · 训练集" : ""}`);
+    if (CLIPS.length === 1) {
+      // One clip: a label, not a switch that switches nothing.
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = clipName(CLIPS[0], 0);
+      tabs.appendChild(tag);
+    } else {
+      CLIPS.forEach((clip, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.textContent = clipName(clip, i);
+        b.setAttribute("aria-pressed", String(i === app.clipIndex));
+        if (i === app.clipIndex) b.style.borderColor = "var(--model)";
+        b.addEventListener("click", () => { app.clipIndex = i; app.clipRevealed = false; renderVideo(); });
+        tabs.appendChild(b);
+      });
+    }
     const clip = CLIPS[app.clipIndex];
     const wrap = $("#clip-media-wrap");
     $$("img, video", wrap).forEach((el) => el.remove());
     if (clip) {
       const isVideo = /\.(mp4|webm)$/i.test(clip.media);
       const media = document.createElement(isVideo ? "video" : "img");
+      // The frame takes the clip's own aspect ratio, so it never shows bars around it.
+      const fit = (w, h) => { if (w && h) $("#clip-figure").style.setProperty("--ar", String(w / h)); };
+      if (isVideo) media.addEventListener("loadedmetadata", () => fit(media.videoWidth, media.videoHeight));
+      else media.addEventListener("load", () => fit(media.naturalWidth, media.naturalHeight));
       media.src = clip.media;
       if (isVideo) Object.assign(media, { autoplay: true, loop: true, muted: true, playsInline: true });
       else media.alt = clip.caption;
@@ -595,7 +608,7 @@
     bars.innerHTML = "";
     [["我们的结构", c.dsl.validation.accuracy, "bar-model"], ["对照组结构", c.baseline.validation.accuracy, "bar-base"]].forEach(([label, v, cls]) => {
       const row = document.createElement("div");
-      row.className = "bar-row";
+      row.className = `bar-row ${cls === "bar-model" ? "is-model" : "is-base"}`;
       row.innerHTML = `<span></span><span class="bar-track"><i class="${cls}"></i><span class="chance" title="瞎猜 50%"></span></span><b></b>`;
       row.firstChild.textContent = label;
       row.querySelector("i").style.width = `${(v * 100).toFixed(1)}%`;
@@ -605,7 +618,7 @@
     const facts = $("#clevrer-facts");
     facts.innerHTML = "";
     [
-      `验证集 ${c.dsl.validation.n} 段（会撞 / 不会撞各 ${c.dsl.validation.positives} 段），${c.seeds}；测试集尚未评估。虚线 = 瞎猜（50%）`,
+      `验证集 ${c.dsl.validation.n} 段（会撞 / 不会撞各 ${c.dsl.validation.positives} 段），${c.seeds}；测试集尚未评估`,
       `${c.transfer}`,
       `上游可训练参数：我们 ${fmt(c.dsl.upstream_params, "M")} · 对照 ${fmt(c.baseline.upstream_params, "M")}`,
       `${c.domain_note}（CLEVRER，Yi et al., ICLR 2020，CC0）`,
